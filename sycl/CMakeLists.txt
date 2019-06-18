@@ -185,13 +185,11 @@ add_library("${SYCLLibrary}" SHARED
   "${sourceRootPath}/detail/os_util.cpp"
   "${sourceRootPath}/detail/platform_util.cpp"
   "${sourceRootPath}/detail/sampler_impl.cpp"
+  "${sourceRootPath}/detail/stream_impl.cpp"
   "${sourceRootPath}/detail/scheduler/commands.cpp"
-  "${sourceRootPath}/detail/scheduler/commands2.cpp"
-  "${sourceRootPath}/detail/scheduler/printers.cpp"
   "${sourceRootPath}/detail/scheduler/scheduler.cpp"
   "${sourceRootPath}/detail/scheduler/graph_processor.cpp"
   "${sourceRootPath}/detail/scheduler/graph_builder.cpp"
-  "${sourceRootPath}/detail/scheduler/scheduler2.cpp"
   "${sourceRootPath}/detail/util.cpp"
   "${sourceRootPath}/context.cpp"
   "${sourceRootPath}/device.cpp"
@@ -203,6 +201,7 @@ add_library("${SYCLLibrary}" SHARED
   "${sourceRootPath}/platform.cpp"
   "${sourceRootPath}/queue.cpp"
   "${sourceRootPath}/sampler.cpp"
+  "${sourceRootPath}/stream.cpp"
   "${sourceRootPath}/spirv_ops.cpp"
 )
 

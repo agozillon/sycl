@@ -67,9 +67,6 @@ public:
   /// sampler class.
   static bool isSyclSamplerType(const QualType &Ty);
 
-  /// Checks whether given clang type is the SYCL stream class.
-  static bool isSyclStreamType(const QualType &Ty);
-
   /// Checks whether given clang type is declared in the given hierarchy of
   /// declaration contexts.
   /// \param Ty         the clang type being checked
@@ -345,12 +342,6 @@ private:
       Ty = QualType{Ty->getPointeeOrArrayElementType(), 0};
 
     if (const auto *CRD = Ty->getAsCXXRecordDecl()) {
-      // FIXME: this seems like a temporary fix for SYCL programs
-      // that pre-declare, use, but not define OclCXX classes,
-      // which are later translated into SPIRV types.
-      if (!CRD->hasDefinition())
-        return true;
-
       if (CRD->isPolymorphic()) {
         SemaRef.Diag(CRD->getLocation(), diag::err_sycl_virtual_types);
         SemaRef.Diag(Loc.getBegin(), diag::note_sycl_used_here);
@@ -815,15 +806,11 @@ static void buildArgTys(ASTContext &Context, CXXRecordDecl *KernelObj,
       assert(InitMethod && "sampler must have __init method");
 
       // sampler __init method has only one parameter
-      // void __init(__ocl_sampler_t *Sampler)
       auto *FuncDecl = cast<FunctionDecl>(InitMethod);
       ParmVarDecl *SamplerArg = FuncDecl->getParamDecl(0);
       assert(SamplerArg && "sampler __init method must have sampler parameter");
 
       CreateAndAddPrmDsc(Fld, SamplerArg->getType());
-    } else if (Util::isSyclStreamType(ArgTy)) {
-      // the parameter is a SYCL stream object
-      llvm_unreachable("streams not supported yet");
     } else if (ArgTy->isStructureOrClassType()) {
       if (!ArgTy->isStandardLayoutType()) {
         const DeclaratorDecl *V =
@@ -918,16 +905,12 @@ static void populateIntHeader(SYCLIntegrationHeader &H, const StringRef Name,
       assert(InitMethod && "sampler must have __init method");
 
       // sampler __init method has only one argument
-      // void __init(__ocl_sampler_t *Sampler)
       auto *FuncDecl = cast<FunctionDecl>(InitMethod);
       ParmVarDecl *SamplerArg = FuncDecl->getParamDecl(0);
       assert(SamplerArg && "sampler __init method must have sampler parameter");
       uint64_t Sz = Ctx.getTypeSizeInChars(SamplerArg->getType()).getQuantity();
       H.addParamDesc(SYCLIntegrationHeader::kind_sampler,
                      static_cast<unsigned>(Sz), static_cast<unsigned>(Offset));
-    } else if (Util::isSyclStreamType(ArgTy)) {
-      // the parameter is a SYCL stream object
-      llvm_unreachable("streams not supported yet");
     } else if (ArgTy->isStructureOrClassType() || ArgTy->isScalarType()) {
       // the parameter is an object of standard layout type or scalar;
       // the check for standard layout is done elsewhere
@@ -1374,14 +1357,6 @@ bool Util::isSyclSamplerType(const QualType &Ty) {
       Util::DeclContextDesc{clang::Decl::Kind::Namespace, "cl"},
       Util::DeclContextDesc{clang::Decl::Kind::Namespace, "sycl"},
       Util::DeclContextDesc{clang::Decl::Kind::CXXRecord, "sampler"}};
-  return matchQualifiedTypeName(Ty, Scopes);
-}
-
-bool Util::isSyclStreamType(const QualType &Ty) {
-  static std::array<DeclContextDesc, 3> Scopes = {
-      Util::DeclContextDesc{clang::Decl::Kind::Namespace, "cl"},
-      Util::DeclContextDesc{clang::Decl::Kind::Namespace, "sycl"},
-      Util::DeclContextDesc{clang::Decl::Kind::CXXRecord, "stream"}};
   return matchQualifiedTypeName(Ty, Scopes);
 }
 
